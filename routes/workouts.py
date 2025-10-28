@@ -2,19 +2,22 @@ from flask import Blueprint, jsonify, request
 from models.workout import Workout
 from models.exercise import Exercise
 from datetime import datetime
+from flask_jwt_extended import jwt_required, get_jwt_identity
+
 
 workouts_bp = Blueprint('workouts', __name__, url_prefix='/workouts')
 
 
 # Route to view all workouts
 @workouts_bp.route('/', methods=['GET'])
+@jwt_required()
 def get_all_workouts():
     workouts = Workout.query.all()
     results = []
     for w in workouts:
         results.append({
             'id':w.id,
-            'user_id': w.user_id,
+            'user_id': w.get_jwt_identity(),
             'date': w.date.isoformat(),
             'notes':w.notes,
             'duration': w.duration,
@@ -55,6 +58,7 @@ def get_workout(workout_id):
 
 # Route to add new workouts
 @workouts_bp.route('/add', methods=['POST'])
+@jwt_required()
 def add_workout():
     data = request.get_json() # GETs JSON data from request body
 
@@ -62,7 +66,7 @@ def add_workout():
     if not data:
         return {'error': 'No input data provided'}, 400
     
-    user_id = data.get('user_id') # default user for now
+    user_id = get_jwt_identity() # <-- Gets user ID from JWT token
     date = data.get('date')
     notes = data.get('notes', '')
     duration = data.get('duration', 0)
@@ -94,6 +98,7 @@ def add_workout():
             reps=ex.get('reps', 0),
             weight=ex.get('weight',0)
         ) # SQLALCHEMY relationship handles linking
+        db.session.add(exercise)     
     
     # Save to database
     from models import db
@@ -101,4 +106,3 @@ def add_workout():
     db.session.commit()
 
     return {'message': 'Workout added successfully', 'workout_id': workout.id}, 201
-
