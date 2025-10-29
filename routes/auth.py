@@ -33,16 +33,16 @@ def login():
     data = request.get_json()
     if not data:
         return {"message": "Missing JSON in request"}, 400
-    username = data.get('username')
+    email = data.get('email')
     password = data.get('password')
-    if not username or not password:
-        return {"Message": "Username and password are required"}, 400
-    user = User.query.filter_by(username=username).first()
+    if not email or not password:
+        return {"Message": "Email and password are required"}, 400
+    user = User.query.filter_by(email=email).first()
     if not user or not user.check_password(password):
-        return {"message": "Invalid username or password"}, 401
-    
+        return {"message": "Invalid email or password"}, 401
+
     # Identity payload 
-    access_token = create_access_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))
     return {"access_token": access_token, "user": {"id": user.id, "username": user.username, "email": user.email}}, 200
 
 # Protected test-route
